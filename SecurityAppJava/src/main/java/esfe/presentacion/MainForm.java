@@ -15,6 +15,14 @@ import java.util.Date;
 import java.util.List;
 import esfe.presentacion.FinanceForm;
 
+
+
+
+import esfe.dominio.User;
+import com.formdev.flatlaf.FlatDarkLaf;
+import javax.swing.*;
+import java.awt.*;
+
 public class MainForm extends JFrame {
 
     private User userAutenticate;
@@ -27,8 +35,9 @@ public class MainForm extends JFrame {
         this.userAutenticate = userAutenticate;
     }
 
+
     public MainForm() {
-        UIManager.put("Panel.background", new Color(43, 43, 43)); // Fondo más moderno
+        UIManager.put("Panel.background", new Color(43, 43, 43));
 
         try {
             UIManager.setLookAndFeel(new FlatDarkLaf());
@@ -40,40 +49,56 @@ public class MainForm extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        UIManager.put("Panel.background", new Color(43, 43, 43)); // Fondo más moderno
+
+        setContentPane(new BackgroundPanel("src/img/fondo.jpg")); // Establecer fondo
+        initUI();
+
+
+
+        setTitle("💼 Simulador de Finanzas Domésticas");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setLayout(new GridBagLayout()); // Centrar botones
 
         initUI();
     }
 
     private void initUI() {
+        setLayout(new BorderLayout());
+
+        // 🔹 Mensaje de bienvenida centrado
+        JLabel lblBienvenida = new JLabel("¡Bienvenido al Sistema!", JLabel.CENTER);
+        lblBienvenida.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        lblBienvenida.setForeground(Color.WHITE);
+        add(lblBienvenida, BorderLayout.CENTER);
+
         JMenuBar menuBar = new JMenuBar();
         menuBar.setBorder(new EmptyBorder(5, 10, 5, 10));
         setJMenuBar(menuBar);
-        UIManager.put("Panel.background", new Color(43, 43, 43)); // Fondo más moderno
 
-        // 🔹 PERFIL
         JMenu menuPerfil = new JMenu("👤 Perfil");
-        menuBar.add(menuPerfil);
-
+        menuPerfil.setFont(new Font("Segoe UI", Font.BOLD, 22));
         menuPerfil.add(createMenuItem("Cambiar contraseña", e -> new ChangePasswordForm(this).setVisible(true)));
         menuPerfil.add(createMenuItem("Cambiar de usuario", e -> new LoginForm(this).setVisible(true)));
         menuPerfil.add(createMenuItem("Salir", e -> System.exit(0)));
+        menuBar.add(menuPerfil);
 
-        // 🔹 MANTENIMIENTOS
         JMenu menuMantenimiento = new JMenu("⚙️ Mantenimientos");
-        menuBar.add(menuMantenimiento);
+        menuMantenimiento.setFont(new Font("Segoe UI", Font.BOLD, 22));
         menuMantenimiento.add(createMenuItem("Usuarios", e -> new UserReadingForm(this).setVisible(true)));
+        menuBar.add(menuMantenimiento);
 
-        // 🔹 FINANZAS
         JMenu menuFinanzas = new JMenu("💰 Finanzas");
-        menuBar.add(menuFinanzas);
-
+        menuFinanzas.setFont(new Font("Segoe UI", Font.BOLD, 22));
         menuFinanzas.add(createMenuItem("Control de Finanzas", e -> openWindow("📊 Control de Finanzas", new FinancePanel(), 800, 600)));
         menuFinanzas.add(createMenuItem("Filtrar por fechas", e -> openWindow("📊 Filtrar por fechas", new FinanceForm(), 900, 700)));
+        menuBar.add(menuFinanzas);
     }
 
     private JMenuItem createMenuItem(String title, java.awt.event.ActionListener action) {
         JMenuItem item = new JMenuItem(title);
+        item.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         item.addActionListener(action);
         return item;
     }
@@ -86,6 +111,24 @@ public class MainForm extends JFrame {
         ventana.add(panel);
         ventana.setVisible(true);
     }
+
+    public class BackgroundPanel extends JPanel {
+        private final ImageIcon imagenFondo;
+
+        public BackgroundPanel(String rutaImagen) {
+            imagenFondo = new ImageIcon(rutaImagen);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.drawImage(imagenFondo.getImage(), 0, 0, getWidth(), getHeight(), this);
+        }
+    }
+
+
+
+
 
     public class FinancePanel extends JPanel {
 

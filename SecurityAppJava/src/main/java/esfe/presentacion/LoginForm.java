@@ -33,6 +33,14 @@ public class LoginForm extends JDialog {
     public LoginForm(MainForm mainForm) {
         this.mainForm = mainForm;
         userDAO = new UserDAO();
+
+        // Inicialización de componentes
+        mainPanel = new JPanel();
+        txtEmail = new JTextField();
+        txtPassword = new JPasswordField();
+        btnLogin = new JButton("Login");
+        btnSalir = new JButton("Salir");
+
         setContentPane(mainPanel);
         setModal(true);
         setTitle("Login");
@@ -40,15 +48,50 @@ public class LoginForm extends JDialog {
         setLocationRelativeTo(mainForm);
         setResizable(false);
 
+        // Estilos y Layout
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(new Color(20, 20, 20));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         txtEmail.setFont(new Font("JetBrains Mono", Font.PLAIN, 14));
         txtPassword.setFont(new Font("JetBrains Mono", Font.PLAIN, 14));
-
         btnLogin.setFocusPainted(false);
         btnSalir.setFocusPainted(false);
 
+        // Etiqueta Email
+        JLabel lblEmail = new JLabel("Email:");
+        lblEmail.setForeground(Color.WHITE);
+        lblEmail.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(lblEmail);
+
+        // Campo Email
+        txtEmail.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        txtEmail.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(txtEmail);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        // Etiqueta Contraseña
+        JLabel lblPassword = new JLabel("Contraseña:");
+        lblPassword.setForeground(Color.WHITE);
+        lblPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(lblPassword);
+
+        // Campo Contraseña
+        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        txtPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(txtPassword);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Panel de botones
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(mainPanel.getBackground());
+        buttonPanel.add(btnLogin);
+        buttonPanel.add(btnSalir);
+        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(buttonPanel);
+
+        // Acciones
         btnSalir.addActionListener(e -> System.exit(0));
         btnLogin.addActionListener(e -> login());
 
