@@ -5,7 +5,9 @@ import esfe.dominio.User;
 import esfe.persistencia.MovimientoDAO;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.toedter.calendar.JDateChooser;
-
+import esfe.dominio.Categoria;
+import esfe.persistencia.CategoriaDAO;
+import esfe.presentacion.CategoriaPanel.CategoriaPanel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -13,6 +15,7 @@ import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import esfe.presentacion.GraficForm.GastosMensualesChart;
 import esfe.presentacion.FinanceForm;
 
 
@@ -92,8 +95,28 @@ public class MainForm extends JFrame {
         JMenu menuFinanzas = new JMenu("💰 Finanzas");
         menuFinanzas.setFont(new Font("Segoe UI", Font.BOLD, 22));
         menuFinanzas.add(createMenuItem("Control de Finanzas", e -> openWindow("📊 Control de Finanzas", new FinancePanel(), 800, 600)));
+        menuFinanzas.add(createMenuItem("Administrar Categorías", e -> openWindow("📁 Categorías", new CategoriaPanel(), 500, 400)));
+        menuBar.add(menuFinanzas);
         menuFinanzas.add(createMenuItem("Filtrar por fechas", e -> openWindow("📊 Filtrar por fechas", new FinanceForm(), 900, 700)));
         menuBar.add(menuFinanzas);
+
+        // ✅ Declara el menú antes de usarlo
+        JMenuItem menuGrafico = new JMenuItem("📊 Ver Gráfica");
+        menuGrafico.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        menuGrafico.addActionListener(e -> {
+            JFrame frame = new JFrame("📊 Análisis de Gastos Mensuales");
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            frame.add(new GastosMensualesChart()); // ✅ Instancia correctamente la gráfica
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+
+// ✅ Agrega el menú correctamente
+        menuFinanzas.add(menuGrafico);
+        menuBar.add(menuFinanzas);
+
+
     }
 
     private JMenuItem createMenuItem(String title, java.awt.event.ActionListener action) {
@@ -138,6 +161,8 @@ public class MainForm extends JFrame {
         private JTable tabla;
         private JLabel resumenLabel, consejoLabel;
 
+        private JComboBox<Categoria> categoriaBox; // NUEVO
+
         public FinancePanel() {
             setLayout(new BorderLayout(15, 15));
             setBorder(new EmptyBorder(15, 15, 15, 15));
@@ -147,7 +172,7 @@ public class MainForm extends JFrame {
             Font fuenteBold = new Font("Segoe UI", Font.BOLD, 14);
 
             // Panel superior: formulario
-            JPanel topPanel = new JPanel(new GridLayout(2, 5, 10, 10));
+            JPanel topPanel = new JPanel(new GridLayout(3, 5, 10, 10));
             topPanel.setBorder(BorderFactory.createTitledBorder("➕ Agregar Movimiento"));
             topPanel.setBackground(getBackground());
 
@@ -158,30 +183,47 @@ public class MainForm extends JFrame {
             dateChooser.setDateFormatString("yyyy-MM-dd");
             dateChooser.setDate(new Date());
 
+            categoriaBox = new JComboBox<>(); // NUEVO
+            List<Categoria> categorias = CategoriaDAO.obtenerCategorias(); // NUEVO
+            for (Categoria c : categorias) {
+                categoriaBox.addItem(c);
+            }
+
             JButton agregarBtn = new JButton("Agregar");
 
             tipoBox.setFont(fuente);
             descripcionField.setFont(fuente);
             montoField.setFont(fuente);
             dateChooser.setFont(fuente);
+            categoriaBox.setFont(fuente); // NUEVO
             agregarBtn.setFont(fuenteBold);
 
             topPanel.add(new JLabel("Tipo:", JLabel.RIGHT));
             topPanel.add(new JLabel("Descripción:", JLabel.RIGHT));
             topPanel.add(new JLabel("Monto:", JLabel.RIGHT));
             topPanel.add(new JLabel("Fecha:", JLabel.RIGHT));
-            topPanel.add(new JLabel(""));
+            topPanel.add(new JLabel("Categoría:", JLabel.RIGHT)); // NUEVO
 
             topPanel.add(tipoBox);
             topPanel.add(descripcionField);
             topPanel.add(montoField);
             topPanel.add(dateChooser);
-            topPanel.add(agregarBtn);
+            topPanel.add(categoriaBox); // NUEVO
+
+            // Botón ocupará fila adicional completa
+            JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            btnPanel.setBackground(getBackground());
+            btnPanel.add(agregarBtn);
+            topPanel.add(new JLabel(""));
+            topPanel.add(new JLabel(""));
+            topPanel.add(new JLabel(""));
+            topPanel.add(new JLabel(""));
+            topPanel.add(btnPanel);
 
             add(topPanel, BorderLayout.NORTH);
 
             // Tabla de movimientos
-            tabla = new JTable(new DefaultTableModel(new String[]{"ID", "Tipo", "Descripción", "Monto", "Fecha"}, 0));
+            tabla = new JTable(new DefaultTableModel(new String[]{"ID", "Tipo", "Descripción", "Monto", "Fecha","Nombre"}, 0));
             tabla.setFont(fuente);
             tabla.setRowHeight(24);
             tabla.setFillsViewportHeight(true);
@@ -226,7 +268,10 @@ public class MainForm extends JFrame {
 
                     String fecha = new SimpleDateFormat("yyyy-MM-dd").format(fechaSeleccionada);
 
-                    Movimiento m = new Movimiento(tipo, desc, monto, fecha);
+                    Categoria categoriaSeleccionada = (Categoria) categoriaBox.getSelectedItem(); // NUEVO
+                    int idCategoria = categoriaSeleccionada != null ? categoriaSeleccionada.getId_categoria() : 0; // NUEVO
+
+                    Movimiento m = new Movimiento(tipo, desc, monto, fecha, idCategoria); // NUEVO
                     MovimientoDAO.agregarMovimiento(m);
                     actualizarTabla();
                     mostrarResumen();
@@ -244,11 +289,15 @@ public class MainForm extends JFrame {
         private void actualizarTabla() {
             DefaultTableModel model = (DefaultTableModel) tabla.getModel();
             model.setRowCount(0);
-            List<Movimiento> lista = MovimientoDAO.obtenerMovimientos();
+            List<Movimiento> lista = MovimientoDAO.obtenerMovimientos(); // ✅ Obtener movimientos con categorías
+
             for (Movimiento m : lista) {
-                model.addRow(new Object[]{m.id, m.tipo, m.descripcion, m.monto, m.fecha});
+                model.addRow(new Object[]{m.id, m.tipo, m.descripcion, m.monto, m.fecha, m.nombreCategoria}); // ✅ Agregar categoría
             }
         }
+
+
+
 
         private void mostrarResumen() {
             double ingresos = MovimientoDAO.calcularTotalPorTipo("Ingreso");

@@ -3,17 +3,19 @@ package esfe.presentacion;
 import com.toedter.calendar.JDateChooser;
 import esfe.dominio.Movimiento;
 import esfe.persistencia.MovimientoDAO;
-
+import esfe.persistencia.CategoriaDAO; // IMPORTAR
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import esfe.dominio.Categoria;
 
 public class FinanceForm extends JPanel {
 
     private JDateChooser filtroDesde, filtroHasta;
     private JTable tabla;
+    private JComboBox<String> categoriaCombo;
 
     public FinanceForm() {
         setLayout(new BorderLayout(15, 15));
@@ -26,6 +28,7 @@ public class FinanceForm extends JPanel {
 
         actualizarTabla();
     }
+
 
     private void initFiltros() {
         JPanel filtroPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -42,17 +45,35 @@ public class FinanceForm extends JPanel {
         filtrarBtn.setForeground(Color.WHITE);
         filtrarBtn.addActionListener(e -> filtrarMovimientos());
 
+        // ✅ Cambiar la carga de categorías
+        categoriaCombo = new JComboBox<>();
+        categoriaCombo.setPreferredSize(new Dimension(120, 25));
+        categoriaCombo.addItem("Todas");
+
+        List<Categoria> categorias = CategoriaDAO.obtenerCategorias();
+        for (Categoria c : categorias) {
+            categoriaCombo.addItem(c.getNombre());
+        }
+
+        JButton filtrarCategoriaBtn = new JButton("Filtrar por categoría");
+        filtrarCategoriaBtn.setBackground(new Color(75, 110, 175));
+        filtrarCategoriaBtn.setForeground(Color.WHITE);
+        filtrarCategoriaBtn.addActionListener(e -> filtrarPorCategoria());
+
         filtroPanel.add(new JLabel("Desde:", JLabel.RIGHT));
         filtroPanel.add(filtroDesde);
         filtroPanel.add(new JLabel("Hasta:", JLabel.RIGHT));
         filtroPanel.add(filtroHasta);
         filtroPanel.add(filtrarBtn);
+        filtroPanel.add(new JLabel("Categoría:", JLabel.RIGHT));
+        filtroPanel.add(categoriaCombo);
+        filtroPanel.add(filtrarCategoriaBtn);
 
         add(filtroPanel, BorderLayout.NORTH);
     }
 
     private void initTabla() {
-        tabla = new JTable(new DefaultTableModel(new String[]{"ID", "Tipo", "Descripción", "Monto", "Fecha"}, 0));
+        tabla = new JTable(new DefaultTableModel(new String[]{"ID", "Tipo", "Descripción", "Monto", "Fecha", "Categoría"}, 0));
         tabla.setRowHeight(24);
         tabla.setBackground(new Color(50, 50, 50));
         tabla.setForeground(Color.WHITE);
@@ -102,17 +123,34 @@ public class FinanceForm extends JPanel {
         String desc = (String) model.getValueAt(fila, 2);
         double monto = (double) model.getValueAt(fila, 3);
         String fecha = (String) model.getValueAt(fila, 4);
+        String categoriaActual = (String) model.getValueAt(fila, 5); // ✅ Obtener la categoría actual
 
         String nuevoTipo = (String) JOptionPane.showInputDialog(this, "Tipo:", "Editar Movimiento",
                 JOptionPane.PLAIN_MESSAGE, null, new String[]{"Ingreso", "Egreso"}, tipo);
+
         String nuevaDesc = JOptionPane.showInputDialog(this, "Descripción:", desc);
         String nuevoMontoStr = JOptionPane.showInputDialog(this, "Monto:", String.valueOf(monto));
         String nuevaFecha = JOptionPane.showInputDialog(this, "Fecha (yyyy-MM-dd):", fecha);
 
+        // ✅ Agregar selección de categoría
+        List<Categoria> categorias = CategoriaDAO.obtenerCategorias();
+        String[] nombresCategorias = categorias.stream().map(Categoria::getNombre).toArray(String[]::new);
+        String nuevaCategoria = (String) JOptionPane.showInputDialog(this, "Categoría:", "Editar Movimiento",
+                JOptionPane.PLAIN_MESSAGE, null, nombresCategorias, categoriaActual);
+
         try {
             double nuevoMonto = Double.parseDouble(nuevoMontoStr);
-            Movimiento actualizado = new Movimiento(nuevoTipo, nuevaDesc, nuevoMonto, nuevaFecha);
+
+            // ✅ Buscar el ID de la nueva categoría
+            int nuevoIdCategoria = categorias.stream()
+                    .filter(c -> c.getNombre().equals(nuevaCategoria))
+                    .findFirst()
+                    .map(Categoria::getIdCategoria)
+                    .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
+
+            Movimiento actualizado = new Movimiento(nuevoTipo, nuevaDesc, nuevoMonto, nuevaFecha, nuevoIdCategoria);
             actualizado.id = id;
+
             MovimientoDAO.actualizarMovimiento(actualizado);
             actualizarTabla();
         } catch (Exception ex) {
@@ -143,17 +181,29 @@ public class FinanceForm extends JPanel {
     }
 
     private void filtrarMovimientos() {
-        java.util.Date desde = filtroDesde.getDate();
-        java.util.Date hasta = filtroHasta.getDate();
+        java.util.Date desdeUtil = filtroDesde.getDate();
+        java.util.Date hastaUtil = filtroHasta.getDate();
 
-        if (desde == null || hasta == null) {
+        if (desdeUtil == null || hastaUtil == null) {
             JOptionPane.showMessageDialog(this, "Seleccione ambas fechas para filtrar.");
             return;
         }
 
-        List<Movimiento> filtrados = MovimientoDAO.obtenerMovimientosPorFecha(
-                new java.sql.Date(desde.getTime()), new java.sql.Date(hasta.getTime()));
+        java.sql.Date desdeSql = new java.sql.Date(desdeUtil.getTime());
+        java.sql.Date hastaSql = new java.sql.Date(hastaUtil.getTime());
+
+        List<Movimiento> filtrados = MovimientoDAO.filtrarPorFecha(desdeSql, hastaSql);
         cargarMovimientosEnTabla(filtrados);
+    }
+
+    private void filtrarPorCategoria() {
+        String categoriaSeleccionada = (String) categoriaCombo.getSelectedItem();
+        if ("Todas".equals(categoriaSeleccionada)) {
+            actualizarTabla();
+        } else {
+            List<Movimiento> filtrados = MovimientoDAO.filtrarPorCategoria(categoriaSeleccionada);
+            cargarMovimientosEnTabla(filtrados);
+        }
     }
 
     private void actualizarTabla() {
@@ -165,7 +215,7 @@ public class FinanceForm extends JPanel {
         DefaultTableModel model = (DefaultTableModel) tabla.getModel();
         model.setRowCount(0);
         for (Movimiento m : lista) {
-            model.addRow(new Object[]{m.id, m.tipo, m.descripcion, m.monto, m.fecha});
+            model.addRow(new Object[]{m.id, m.tipo, m.descripcion, m.monto, m.fecha, m.nombreCategoria});
         }
     }
 }
