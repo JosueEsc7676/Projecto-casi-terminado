@@ -28,18 +28,22 @@ public class CategoriaPanel extends JPanel {
         titulo.setForeground(Color.WHITE);
         add(titulo, BorderLayout.NORTH);
 
+        // Sección de ingreso de nueva categoría
         JPanel formPanel = new JPanel(new BorderLayout(5, 5));
         formPanel.setBackground(getBackground());
 
         nombreField = new JTextField();
         nombreField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        formPanel.add(new JLabel("Nueva categoría:", JLabel.LEFT), BorderLayout.NORTH);
         formPanel.add(nombreField, BorderLayout.CENTER);
 
-        agregarBtn = new JButton("Agregar");
+        agregarBtn = new JButton("➕ Agregar Categoría");
         agregarBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        formPanel.add(agregarBtn, BorderLayout.EAST);
+        agregarBtn.setBackground(new Color(40, 167, 69)); // Verde para indicar acción positiva
+        agregarBtn.setForeground(Color.WHITE);
+        formPanel.add(agregarBtn, BorderLayout.SOUTH);
 
-        add(formPanel, BorderLayout.SOUTH);
+        add(formPanel, BorderLayout.NORTH);
 
         modeloLista = new DefaultListModel<>();
         listaCategorias = new JList<>(modeloLista);

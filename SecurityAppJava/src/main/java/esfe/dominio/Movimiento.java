@@ -12,7 +12,7 @@ public class Movimiento {
     public String nombreCategoria;
     // NUEVO
 
-    // Constructor original
+    // constructor original
     public Movimiento(String tipo, String descripcion, double monto, String fecha) {
         this.tipo = tipo;
         this.descripcion = descripcion;
@@ -21,8 +21,8 @@ public class Movimiento {
 
     }
 
-    // NUEVO
-    // Nuevo constructor con categoría
+
+    // nuevo constructor con categoría
     public Movimiento(String tipo, String descripcion, double monto, String fecha, int id_categoria) {
         this(tipo, descripcion, monto, fecha);
         this.id_categoria = id_categoria;
